@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Azure Blob Storage Explorer - Connect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .connection-card {
+        transition: transform 0.3s, box-shadow 0.3s;
+        margin-top: 30px;
+    }
+
+    .connection-icon {
+        font-size: 3rem;
+        color: var(--azure-blue);
+        margin-bottom: 15px;
+    }
+    
+    .feature-card {
+        height: 100%;
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    
+    .feature-icon {
+        font-size: 2rem;
+        color: var(--azure-blue);
+        margin-bottom: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="text-center mb-4">
+    <div class="connection-icon">
+        <i class="bi bi-cloud"></i>
+    </div>
+    <h2 class="mb-3">Azure Blob Storage Explorer</h2>
+    <p class="lead">Connect to your Azure Storage account to browse, upload, and manage files</p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card connection-card">
+            <div class="card-header">
+                <h3 class="card-title mb-0">Connect to Azure Storage</h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Enter your Azure Storage account connection string to connect.
+                </div>
+                
+                <form action="{{ url_for('connect') }}" method="post">
+                    <div class="form-group">
+                        <label for="connection_string">Connection String</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="bi bi-key"></i></span>
+                            </div>
+                            <input type="text" class="form-control" id="connection_string" name="connection_string" 
+                                value="{{ session.get('connection_string', '') }}" required 
+                                placeholder="DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net">
+                        </div>
+                        <small class="form-text text-muted">
+                            <i class="bi bi-info-circle-fill"></i> You can find the connection string in the Azure Portal under "Access keys" for your storage account.
+                        </small>
+                    </div>
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-cloud-arrow-up"></i> Connect
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                <small class="text-muted">Your connection information is only stored in your browser session</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Auto focus the connection string input field
+        $('#connection_string').focus();
+        
+        // Form validation and submission
+        $('form').submit(function() {
+            var connectionString = $('#connection_string').val().trim();
+            
+            if (!connectionString) {
+                $('#connection_string').addClass('is-invalid');
+                return false;
+            }
+            
+            $('#loadingOverlay .loading-text').text('Connecting to Azure Storage...');
+            $('#loadingOverlay').show();
+            
+            return true;
+        });
+        
+        // Clear validation error on input
+        $('#connection_string').on('input', function() {
+            $(this).removeClass('is-invalid');
+        });
+    });
+</script>
+{% endblock %}
