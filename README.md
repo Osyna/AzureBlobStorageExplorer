@@ -1,7 +1,6 @@
 # Azure Blob Storage Explorer
 
-[![alt text](http://url/to/img.png)
-](https://github.com/Osyna/AzureBlobStorageExplorer/blob/6120543199bd8c696c7668b02e20f3c48f1ea365/preview.png)
+![alt text](https://raw.githubusercontent.com/Osyna/AzureBlobStorageExplorer/refs/heads/main/preview.png)
 
 A simple web application for browsing and managing Azure Blob Storage.
 
