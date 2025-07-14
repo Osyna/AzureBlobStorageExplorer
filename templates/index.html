@@ -25,6 +25,42 @@
         color: var(--azure-blue);
         margin-bottom: 15px;
     }
+    
+    .connection-method {
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 20px;
+        margin-bottom: 20px;
+        background-color: #f8f9fa;
+    }
+    
+    .connection-method h5 {
+        margin-bottom: 15px;
+        color: #495057;
+    }
+    
+    .or-divider {
+        text-align: center;
+        margin: 30px 0;
+        position: relative;
+    }
+    
+    .or-divider::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: #dee2e6;
+    }
+    
+    .or-divider span {
+        background: white;
+        padding: 0 20px;
+        color: #6c757d;
+        font-weight: 500;
+    }
 </style>
 {% endblock %}
 
@@ -44,25 +80,111 @@
                 <h3 class="card-title mb-0">Connect to Azure Storage</h3>
             </div>
             <div class="card-body">
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i> Enter your Azure Storage account connection string to connect.
+                {% if session.get('connection_string') or (session.get('account_url') and session.get('credential')) %}
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle"></i> 
+                    <strong>Already Connected!</strong> 
+                    {% if session.get('container_name') %}
+                        Connected to container: <strong>{{ session.get('container_name') }}</strong>
+                    {% else %}
+                        Connected to storage account (all containers)
+                    {% endif %}
+                    <div class="mt-2">
+                        <a href="{{ url_for('explorer') }}" class="btn btn-success btn-sm">
+                            <i class="bi bi-folder2-open"></i> Continue to Explorer
+                        </a>
+                        <a href="{{ url_for('disconnect') }}" class="btn btn-outline-secondary btn-sm ml-2">
+                            <i class="bi bi-box-arrow-right"></i> Disconnect
+                        </a>
+                    </div>
                 </div>
+                <hr>
+                <h5 class="text-muted">Or connect with different credentials:</h5>
+                {% endif %}
                 
                 <form action="{{ url_for('connect') }}" method="post">
-                    <div class="form-group">
-                        <label for="connection_string">Connection String</label>
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="bi bi-key"></i></span>
-                            </div>
-                            <input type="text" class="form-control" id="connection_string" name="connection_string" 
-                                value="{{ session.get('connection_string', '') }}" required 
-                                placeholder="DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net">
+                    <!-- Connection String Method -->
+                    <div class="connection-method">
+                        <h5><i class="bi bi-key"></i> Connection String Method</h5>
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> Use the full connection string from Azure Portal.
                         </div>
-                        <small class="form-text text-muted">
-                            <i class="bi bi-info-circle-fill"></i> You can find the connection string in the Azure Portal under "Access keys" for your storage account.
-                        </small>
+                        
+                        <div class="form-group">
+                            <label for="connection_string">Connection String</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="bi bi-key"></i></span>
+                                </div>
+                                <input type="text" class="form-control" id="connection_string" name="connection_string" 
+                                    placeholder="DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net">
+                            </div>
+                            <small class="form-text text-muted">
+                                <i class="bi bi-info-circle-fill"></i> Found in Azure Portal under "Access keys" for your storage account.
+                            </small>
+                        </div>
                     </div>
+
+                    <div class="or-divider">
+                        <span>OR</span>
+                    </div>
+
+                    <!-- Account URL + Credential Method -->
+                    <div class="connection-method">
+                        <h5><i class="bi bi-link-45deg"></i> Account URL + Credential Method</h5>
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> Use account URL with SAS token or access key.
+                        </div>
+
+                        <div class="form-group">
+                            <label for="account_url">Account URL</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="bi bi-link"></i></span>
+                                </div>
+                                <input type="text" class="form-control" id="account_url" name="account_url" 
+                                    placeholder="https://yourstorageaccount.blob.core.windows.net">
+                            </div>
+                            <small class="form-text text-muted">
+                                <i class="bi bi-info-circle-fill"></i> The full URL to your storage account blob service.
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="credential">Credential (SAS Token or Access Key)</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
+                                </div>
+                                <input type="password" class="form-control" id="credential" name="credential" 
+                                placeholder="SAS Token (sp=rl&st=...) or Access Key">
+                            </div>
+                            <small class="form-text text-muted">
+                                <i class="bi bi-info-circle-fill"></i> SAS token from Azure Portal or the primary/secondary access key.
+                                <br><strong>Note:</strong> Limited permissions (e.g., container-level SAS tokens) are supported.
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Optional Container -->
+                    <div class="connection-method">
+                        <h5><i class="bi bi-database"></i> Optional: Direct Container Access</h5>
+                        <div class="form-group">
+                            <label for="container_name">Container Name (Optional)</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="bi bi-database"></i></span>
+                                </div>
+                                <input type="text" class="form-control" id="container_name" name="container_name" 
+                                    placeholder="mycontainer (leave empty to browse all containers)">
+                            </div>
+                            <small class="form-text text-muted">
+                                <i class="bi bi-info-circle-fill"></i> Enter a container name to access it directly, or leave empty to browse all containers.
+                                <br><strong>Tip:</strong> If using a container-level SAS token, you must specify the container name here.
+                            </small>
+                        </div>
+                    </div>
+
                     <div class="text-center mt-4">
                         <button type="submit" class="btn btn-primary btn-lg">
                             <i class="bi bi-cloud-arrow-up"></i> Connect
@@ -86,23 +208,51 @@
         $('#connection_string').focus();
         
         // Form validation and submission
-        $('form').submit(function() {
+        $('form').submit(function(e) {
             var connectionString = $('#connection_string').val().trim();
+            var accountUrl = $('#account_url').val().trim();
+            var credential = $('#credential').val().trim();
             
-            if (!connectionString) {
-                $('#connection_string').addClass('is-invalid');
+            // Check if at least one method is provided
+            if (!connectionString && (!accountUrl || !credential)) {
+                e.preventDefault();
+                alert('Please provide either:\n• A connection string, OR\n• Both account URL and credential');
+                
+                // Highlight empty required fields
+                if (!connectionString) {
+                    $('#connection_string').addClass('is-invalid');
+                }
+                if (!accountUrl || !credential) {
+                    $('#account_url, #credential').addClass('is-invalid');
+                }
                 return false;
             }
             
-            $('#loadingOverlay .loading-text').text('Connecting to Azure Storage...');
-            $('#loadingOverlay').show();
+            // Show loading
+            if (typeof $('#loadingOverlay') !== 'undefined') {
+                $('#loadingOverlay .loading-text').text('Connecting to Azure Storage...');
+                $('#loadingOverlay').show();
+            }
             
             return true;
         });
         
-        // Clear validation error on input
-        $('#connection_string').on('input', function() {
+        // Clear validation errors on input
+        $('#connection_string, #account_url, #credential').on('input', function() {
             $(this).removeClass('is-invalid');
+        });
+        
+        // Clear other method when user starts typing in one
+        $('#connection_string').on('input', function() {
+            if ($(this).val().trim()) {
+                $('#account_url, #credential').val('').removeClass('is-invalid');
+            }
+        });
+        
+        $('#account_url, #credential').on('input', function() {
+            if ($('#account_url').val().trim() || $('#credential').val().trim()) {
+                $('#connection_string').val('').removeClass('is-invalid');
+            }
         });
     });
 </script>

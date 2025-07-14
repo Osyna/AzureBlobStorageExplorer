@@ -3,6 +3,7 @@ import logging
 import tempfile
 from azure.storage.blob import BlobServiceClient
 from azure.core.exceptions import ResourceNotFoundError
+from typing import Optional
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -11,22 +12,59 @@ logger = logging.getLogger(__name__)
 class AzureExplorer:
     """Azure Blob Storage explorer class for interacting with Azure Storage"""
     
-    def __init__(self, connection_string):
-        """Initialize with Azure Storage connection string"""
-        self.connection_string = connection_string
-        self.blob_service_client = self._create_blob_service_client()
-    
-    def _create_blob_service_client(self):
-        """Create and test the blob service client connection"""
+    def __init__(self,
+                 account_url: Optional[str] = None,
+                 credential: Optional[str] = None,
+                 connection_string: Optional[str] = None,
+                 container_name: Optional[str] = None
+                 ):
+        """Initialize with Azure Storage connection string or account_url + credential"""
+
+        self.container_name = container_name
+        self.container_client = None
+        self.blob_service_client = None
+
         try:
-            blob_service_client = BlobServiceClient.from_connection_string(self.connection_string)
-            # Test connection
-            blob_service_client.get_service_properties()
+            # Validate input parameters
+            if not connection_string and (not account_url or not credential):
+                raise ValueError("Either 'connection_string' or both 'account_url' and 'credential' must be provided.")
+            
+            # Create BlobServiceClient based on provided credentials
+            if connection_string:
+                logger.info("Using connection string for Azure Blob Storage")
+                self.blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+            elif account_url and credential:
+                logger.info("Using account URL and credential for Azure Blob Storage")
+                self.blob_service_client = BlobServiceClient(account_url=account_url, credential=credential)
+            
+            if not self.blob_service_client:
+                raise ValueError("Failed to create BlobServiceClient. Please check your configuration.")
+            
+            logger.debug("BlobServiceClient created successfully")
             logger.info("Successfully connected to Azure Blob Storage")
-            return blob_service_client
+            
+            # Set up container client if container_name is provided
+            if self.container_name:
+                self.select_container(self.container_name)
+                
         except Exception as e:
             logger.error(f"Failed to connect to Azure Blob Storage: {str(e)}")
             raise
+    
+    def select_container(self, container_name: str):
+        """Select a specific container"""
+        logger.info(f"Selecting container '{container_name}'")
+        self.container_name = container_name
+        self.container_client = self.blob_service_client.get_container_client(container_name)
+        
+        # Try to verify container exists, but don't fail if we don't have permissions
+        try:
+            if not self.container_client.exists():
+                logger.warning(f"Container '{container_name}' may not exist or is not accessible")
+        except Exception as e:
+            # If we can't check existence due to permissions, just log and continue
+            logger.warning(f"Cannot verify container '{container_name}' existence due to limited permissions: {str(e)}")
+            logger.info(f"Continuing with container '{container_name}' - will attempt operations as needed")
     
     def list_containers(self):
         """List all containers in the storage account"""
@@ -43,6 +81,10 @@ class AzureExplorer:
             return containers
         except Exception as e:
             logger.error(f"Error listing containers: {str(e)}", exc_info=True)
+            # If we can't list containers due to permissions, return empty list with warning
+            if "AuthorizationFailure" in str(e) or "Forbidden" in str(e):
+                logger.warning("Cannot list containers due to insufficient permissions. You may need container-level or account-level permissions.")
+                return []
             raise
     
     def list_blobs_and_folders(self, container_name, prefix=""):
@@ -90,7 +132,7 @@ class AzureExplorer:
                         continue
                     
                     # Add to blobs list (limit 100 for performance)
-                    if len(blobs) < 100:
+                    if len(blobs) < 500:
                         blobs.append(self._create_blob_info(item))
             
             # Convert folders to list of dictionaries
@@ -165,10 +207,15 @@ class AzureExplorer:
             
             container_client = self.blob_service_client.get_container_client(container_name)
             
-            # Ensure container exists
-            if not container_client.exists():
-                logger.info(f"Container {container_name} doesn't exist, creating...")
-                container_client.create_container()
+            # Only try to check/create container if we might have permissions
+            try:
+                if not container_client.exists():
+                    logger.info(f"Container {container_name} doesn't exist, attempting to create...")
+                    container_client.create_container()
+            except Exception as e:
+                # If we can't check existence or create, just continue and let the upload attempt proceed
+                logger.warning(f"Cannot verify/create container due to permissions: {str(e)}")
+                logger.info("Proceeding with upload attempt...")
             
             blob_client = container_client.get_blob_client(blob_name)
             
@@ -221,10 +268,15 @@ class AzureExplorer:
             
             container_client = self.blob_service_client.get_container_client(container_name)
             
-            # Ensure container exists
-            if not container_client.exists():
-                logger.info(f"Container {container_name} doesn't exist, creating...")
-                container_client.create_container()
+            # Only try to check/create container if we might have permissions
+            try:
+                if not container_client.exists():
+                    logger.info(f"Container {container_name} doesn't exist, attempting to create...")
+                    container_client.create_container()
+            except Exception as e:
+                # If we can't check existence or create, just continue and let the folder creation attempt proceed
+                logger.warning(f"Cannot verify/create container due to permissions: {str(e)}")
+                logger.info("Proceeding with folder creation attempt...")
             
             # Create a zero-length blob with the folder name
             blob_client = container_client.get_blob_client(full_path)
@@ -236,3 +288,4 @@ class AzureExplorer:
         except Exception as e:
             logger.error(f"Error creating folder {container_name}/{folder_name}: {str(e)}", exc_info=True)
             return False
+        

@@ -22,6 +22,45 @@ TEMP_DIR = tempfile.mkdtemp()
 # Global Azure explorer instance
 azure_explorer = None
 
+def get_or_create_azure_explorer():
+    """Get existing or create new azure_explorer from session data"""
+    global azure_explorer
+    
+    if azure_explorer:
+        return azure_explorer
+    
+    # Try to recreate from session
+    connection_string = session.get('connection_string')
+    account_url = session.get('account_url')
+    credential = session.get('credential')
+    container_name = session.get('container_name')
+    
+    if connection_string:
+        try:
+            azure_explorer = AzureExplorer(
+                connection_string=connection_string,
+                container_name=container_name
+            )
+            logger.info("Recreated azure_explorer from session with connection_string")
+            return azure_explorer
+        except Exception as e:
+            logger.error(f"Failed to recreate azure_explorer with connection_string: {str(e)}")
+            return None
+    elif account_url and credential:
+        try:
+            azure_explorer = AzureExplorer(
+                account_url=account_url,
+                credential=credential,
+                container_name=container_name
+            )
+            logger.info("Recreated azure_explorer from session with account_url/credential")
+            return azure_explorer
+        except Exception as e:
+            logger.error(f"Failed to recreate azure_explorer with account_url/credential: {str(e)}")
+            return None
+    
+    return None
+
 @app.route('/')
 def index():
     """Main page - connect to Azure Storage."""
@@ -32,53 +71,135 @@ def connect():
     """Connect to Azure Blob Storage."""
     global azure_explorer
     
-    connection_string = request.form.get('connection_string')
-    session['connection_string'] = connection_string
-    
+    connection_string = request.form.get('connection_string', '').strip()
+    account_url = request.form.get('account_url', '').strip()
+    credential = request.form.get('credential', '').strip()
+    container_name = request.form.get('container_name', '').strip() or None
+
+    # Validate input
+    if not connection_string and (not account_url or not credential):
+        flash("Please provide either a connection string or account URL and credential.", 'warning')
+        return redirect(url_for('index'))
+
     try:
-        azure_explorer = AzureExplorer(connection_string)
+        # Store in session only after successful validation
+        session['connection_string'] = connection_string if connection_string else None
+        session['account_url'] = account_url if account_url else None
+        session['credential'] = credential if credential else None
+        session['container_name'] = container_name
+        
+        azure_explorer = AzureExplorer(            
+            connection_string=connection_string if connection_string else None,
+            account_url=account_url if account_url else None,
+            credential=credential if credential else None,
+            container_name=container_name
+        )
+        logger.info(f"Successfully connected to Azure Storage. Container: {container_name or 'All containers'}")
         return redirect(url_for('explorer'))
     except Exception as e:
+        # Clear session data on connection failure
+        session.pop('connection_string', None)
+        session.pop('account_url', None)
+        session.pop('credential', None)
+        session.pop('container_name', None)
+        
         logger.error(f"Connection error: {str(e)}", exc_info=True)
-        flash(f"Error connecting to Azure Storage: {str(e)}", 'danger')
+        
+        # Provide more helpful error messages based on the error type
+        error_message = str(e)
+        if "AuthorizationFailure" in error_message or "Forbidden" in error_message:
+            flash("Authorization failed. This usually means:\n• Your SAS token has expired or insufficient permissions\n• You're using a container-level SAS token but didn't specify the container name\n• You need read/list permissions for the requested operation", 'danger')
+        else:
+            flash(f"Error connecting to Azure Storage: {error_message}", 'danger')
         return redirect(url_for('index'))
+
+@app.route('/disconnect')
+def disconnect():
+    """Disconnect from Azure Storage and clear session."""
+    global azure_explorer
+    
+    # Clear the global explorer
+    azure_explorer = None
+    
+    # Clear session data
+    session.pop('connection_string', None)
+    session.pop('account_url', None)
+    session.pop('credential', None)
+    session.pop('container_name', None)
+    
+    flash("Disconnected from Azure Storage", 'info')
+    return redirect(url_for('index'))
 
 @app.route('/explorer')
 def explorer():
     """Main explorer view - lists containers as top-level folders."""
     global azure_explorer
     
+    azure_explorer = get_or_create_azure_explorer()
+    
     if not azure_explorer:
-        # Try to reconnect using stored connection string
-        connection_string = session.get('connection_string')
-        if connection_string:
-            try:
-                azure_explorer = AzureExplorer(connection_string)
-            except Exception as e:
-                flash(f"Failed to reconnect: {str(e)}", 'danger')
-                return redirect(url_for('index'))
-        else:
-            flash("Not connected to Azure Storage", 'warning')
-            return redirect(url_for('index'))
+        flash("Not connected to Azure Storage", 'warning')
+        return redirect(url_for('index'))
+    
+    container_name = session.get('container_name')
     
     try:
-        containers = azure_explorer.list_containers()
-        return render_template(
-            'explorer.html',
-            current_path="/",
-            breadcrumbs=[],
-            items=containers,
-            is_root=True
-        )
+        if container_name:
+            # Direct access to specific container
+            logger.info(f"Direct access to container: {container_name}")
+            
+            breadcrumbs = [
+                {'name': 'Root', 'path': '/'},
+                {'name': container_name, 'path': f'/{container_name}'}
+            ]
+            
+            folders, blobs = azure_explorer.list_blobs_and_folders(container_name, '')
+        
+            # Process blob metadata
+            for blob in blobs:
+                process_file_metadata(blob)
+            
+            items = folders + blobs
+            
+            return render_template(
+                'explorer.html',
+                current_path=f'/{container_name}',
+                breadcrumbs=breadcrumbs,
+                items=items,
+                is_root=False,
+                current_container=container_name,
+                current_prefix=''
+            )
+        else:
+            # List all containers
+            logger.info("Listing all containers")
+            try:
+                containers = azure_explorer.list_containers()
+                if not containers:
+                    # If no containers returned, might be due to permissions
+                    flash("No containers found or insufficient permissions to list containers. You may need to specify a container name directly.", 'warning')
+                return render_template(
+                    'explorer.html',
+                    current_path="/",
+                    breadcrumbs=[{'name': 'Root', 'path': '/'}],
+                    items=containers,
+                    is_root=True
+                )
+            except Exception as e:
+                logger.error(f"Cannot list containers: {str(e)}")
+                flash("Cannot list containers due to insufficient permissions. Please specify a container name when connecting.", 'warning')
+                return redirect(url_for('index'))
     except Exception as e:
-        logger.error(f"Container listing error: {str(e)}", exc_info=True)
-        flash(f"Error listing containers: {str(e)}", 'danger')
+        logger.error(f"Explorer error: {str(e)}", exc_info=True)
+        flash(f"Error accessing storage: {str(e)}", 'danger')
         return redirect(url_for('index'))
 
 @app.route('/browse')
 def browse():
     """Browse a container or folder."""
     global azure_explorer
+    
+    azure_explorer = get_or_create_azure_explorer()
     
     if not azure_explorer:
         flash("Not connected to Azure Storage", 'warning')
@@ -141,6 +262,8 @@ def download():
     """Download a blob."""
     global azure_explorer
     
+    azure_explorer = get_or_create_azure_explorer()
+    
     if not azure_explorer:
         flash("Not connected to Azure Storage", 'warning')
         return redirect(url_for('index'))
@@ -178,6 +301,8 @@ def download():
 def upload():
     """Upload a file to the current folder."""
     global azure_explorer
+    
+    azure_explorer = get_or_create_azure_explorer()
     
     if not azure_explorer:
         flash("Not connected to Azure Storage", 'warning')
@@ -231,6 +356,8 @@ def delete():
     """Delete a blob."""
     global azure_explorer
     
+    azure_explorer = get_or_create_azure_explorer()
+    
     if not azure_explorer:
         flash("Not connected to Azure Storage", 'warning')
         return redirect(url_for('index'))
@@ -276,6 +403,8 @@ def create_folder():
     """Create a new folder."""
     global azure_explorer
     
+    azure_explorer = get_or_create_azure_explorer()
+    
     if not azure_explorer:
         flash("Not connected to Azure Storage", 'warning')
         return redirect(url_for('index'))
@@ -312,13 +441,15 @@ def preview_route():
     """API endpoint for data file preview (JSON, CSV, Parquet)."""
     global azure_explorer
     
+    azure_explorer = get_or_create_azure_explorer()
+    
     if not azure_explorer:
         return jsonify({'error': 'Not connected to Azure Storage'}), 401
     
     path = request.args.get('path', '')
     file_type = request.args.get('type', '').lower()
     page = int(request.args.get('page', 1))
-    rows_per_page = int(request.args.get('rows', 100))
+    rows_per_page = int(request.args.get('rows', 500))
     
     if path.startswith('/'):
         path = path[1:]

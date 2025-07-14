@@ -1,0 +1,542 @@
+/* Azure Explorer CSS styles */
+
+:root {
+    /* Color variables */
+    --azure-blue: #0078d4;
+    --azure-light-blue: #50e6ff;
+    --azure-dark-blue: #0063B1;
+    --azure-success: #107c10;
+    --azure-danger: #d13438;
+    --azure-warning: #ffaa44;
+    --azure-folder: #ffc107;
+    --azure-container: #17a2b8;
+    --azure-file: #6c757d;
+}
+
+/* General styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #faf9f8;
+    color: #323130;
+    line-height: 1.5;
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+
+a {
+    color: var(--azure-blue);
+    transition: color 0.15s;
+}
+
+a:hover {
+    color: var(--azure-dark-blue);
+    text-decoration: none;
+}
+
+/* Button styles */
+.btn {
+    border-radius: 4px;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.btn-primary {
+    background-color: var(--azure-blue);
+    border-color: var(--azure-blue);
+}
+
+.btn-primary:hover {
+    background-color: var(--azure-dark-blue);
+    border-color: var(--azure-dark-blue);
+    transform: translateY(-1px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.btn-success {
+    background-color: var(--azure-success);
+    border-color: var(--azure-success);
+}
+
+.btn-danger {
+    background-color: var(--azure-danger);
+    border-color: var(--azure-danger);
+}
+
+.btn-warning {
+    background-color: var(--azure-warning);
+    border-color: var(--azure-warning);
+}
+
+.btn-outline-primary {
+    color: var(--azure-blue);
+    border-color: var(--azure-blue);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--azure-blue);
+    border-color: var(--azure-blue);
+    transform: translateY(-1px);
+}
+
+/* Card styles */
+.card {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.card:hover {
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    font-weight: 600;
+}
+
+.card-footer {
+    background-color: #f8f9fa;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Icon styles */
+.folder-icon {
+    color: var(--azure-folder);
+}
+
+.container-icon {
+    color: var(--azure-container);
+}
+
+.file-icon {
+    color: var(--azure-file);
+}
+
+/* Table styles */
+.table-container {
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.table-hover tbody tr {
+    transition: background-color 0.15s;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 120, 212, 0.05);
+}
+
+/* Badge styles */
+.badge {
+    padding: 0.4em 0.6em;
+    font-weight: 500;
+    border-radius: 4px;
+}
+
+.folder-badge {
+    background-color: var(--azure-folder);
+    color: #212529;
+}
+
+.container-badge {
+    background-color: var(--azure-container);
+    color: white;
+}
+
+.file-badge {
+    background-color: var(--azure-file);
+    color: white;
+}
+
+/* Alert styles */
+.alert {
+    border: none;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Navbar styles */
+.navbar {
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+    font-weight: 600;
+    color: var(--azure-blue) !important;
+}
+
+/* Breadcrumb styles */
+.breadcrumb {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Loading overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    backdrop-filter: blur(3px);
+}
+
+.loading-container {
+    background-color: white;
+    border-radius: 8px;
+    padding: 30px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    text-align: center;
+    max-width: 350px;
+    width: 100%;
+}
+
+.spinner-border {
+    color: var(--azure-blue);
+}
+
+.loading-text {
+    margin-top: 1rem;
+    font-weight: 600;
+}
+
+/* Progress bar */
+.progress {
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    background-color: var(--azure-blue);
+}
+
+/* Toast notifications */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.toast {
+    min-width: 250px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: none;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.toast-header {
+    border: none;
+}
+
+/* Form controls */
+.form-control {
+    border-radius: 4px;
+    border-color: #ddd;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-control:focus {
+    border-color: var(--azure-blue);
+    box-shadow: 0 0 0 0.2rem rgba(0, 120, 212, 0.25);
+}
+
+.input-group-text {
+    border-radius: 4px;
+    background-color: #f8f9fa;
+}
+
+.custom-file-label {
+    border-radius: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Empty state styling */
+.empty-state {
+    text-align: center;
+    padding: 40px 0;
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    color: #e9ecef;
+    margin-bottom: 15px;
+}
+
+.empty-state-text {
+    color: #6c757d;
+    font-size: 1.1rem;
+}
+
+/* Modal customization */
+.modal-content {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    border-bottom: 1px solid #f0f0f0;
+    background-color: #f8f9fa;
+}
+
+.modal-footer {
+    border-top: 1px solid #f0f0f0;
+}
+
+/* File type specific icons */
+.bi-filetype-json {
+    color: #0066B8;
+}
+
+.bi-file-earmark-text {
+    color: #34A853;
+}
+
+.bi-file-earmark-code {
+    color: #EA4335;
+}
+
+.bi-file-earmark-binary {
+    color: #7B1FA2;
+}
+
+.bi-file-earmark-bar-graph {
+    color: #FF9900;
+}
+
+.bi-file-earmark-arrow {
+    color: #01A982;
+}
+
+/* File preview styles */
+.data-preview-container {
+    max-height: 500px;
+    overflow: auto;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+}
+
+.json-viewer {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 15px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.csv-table {
+    width: 100%;
+    font-size: 13px;
+}
+
+.csv-table thead th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 10;
+    font-weight: 600;
+}
+
+.data-preview-toolbar {
+    margin-bottom: 10px;
+    padding: 8px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+/* File type badges */
+.file-type-badge {
+    display: inline-block;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: white;
+    margin-left: 5px;
+}
+
+.json-badge {
+    background-color: #0066B8;
+}
+
+.csv-badge {
+    background-color: #FF9900;
+}
+
+.parquet-badge {
+    background-color: #01A982;
+}
+
+/* Drag and drop zone */
+.drop-zone {
+    padding: 40px;
+    text-align: center;
+    border: 2px dashed #ccc;
+    border-radius: 6px;
+    background-color: #f8f9fa;
+    margin-bottom: 15px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--azure-blue);
+    background-color: rgba(0, 120, 212, 0.05);
+}
+
+.drop-zone-icon {
+    font-size: 2rem;
+    color: #ccc;
+    margin-bottom: 10px;
+}
+
+/* Previewable items */
+.item-display-name.previewable {
+    color: var(--azure-blue);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+
+.table-container {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.data-preview-container {
+    max-height: 500px;
+    overflow: auto;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+}
+
+.json-viewer {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 15px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.csv-table {
+    width: 100%;
+    font-size: 13px;
+}
+
+.csv-table thead th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 10;
+    font-weight: 600;
+}
+
+.data-preview-toolbar {
+    margin-bottom: 10px;
+    padding: 8px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.item-name {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 450px;
+}
+
+.search-container {
+    margin-bottom: 20px;
+}
+
+.drop-zone {
+    padding: 40px;
+    text-align: center;
+    border: 2px dashed #ccc;
+    border-radius: 6px;
+    background-color: #f8f9fa;
+    margin-bottom: 15px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--azure-blue);
+    background-color: rgba(0, 120, 212, 0.05);
+}
+
+/* Ensure table headers stay fixed when scrolling */
+.table thead th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 10;
+}
+
+/* Highlight previewable files */
+.item-display-name.previewable {
+    color: var(--azure-blue);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* Badges for file types */
+.file-type-badge {
+    display: inline-block;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: white;
+    margin-left: 5px;
+}
+
+.json-badge {
+    background-color: #0066B8;
+}
+
+.csv-badge {
+    background-color: #FF9900;
+}
+
+.parquet-badge {
+    background-color: #01A982;
+}
+
+
+
+
+
+
+
+
+
